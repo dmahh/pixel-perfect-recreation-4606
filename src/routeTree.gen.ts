@@ -10,33 +10,63 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BayesianRouteImport } from './routes/bayesian'
+import { Route as ItineraryRouteImport } from './routes/itinerary'
+import { Route as RoutePlannerRouteImport } from './routes/route-planner'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BayesianRoute = BayesianRouteImport.update({
+  id: '/bayesian',
+  path: '/bayesian',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ItineraryRoute = ItineraryRouteImport.update({
+  id: '/itinerary',
+  path: '/itinerary',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RoutePlannerRoute = RoutePlannerRouteImport.update({
+  id: '/route-planner',
+  path: '/route-planner',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/bayesian': typeof BayesianRoute
+  '/itinerary': typeof ItineraryRoute
+  '/route-planner': typeof RoutePlannerRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/bayesian': typeof BayesianRoute
+  '/itinerary': typeof ItineraryRoute
+  '/route-planner': typeof RoutePlannerRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/bayesian': typeof BayesianRoute
+  '/itinerary': typeof ItineraryRoute
+  '/route-planner': typeof RoutePlannerRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/bayesian' | '/itinerary' | '/route-planner'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/bayesian' | '/itinerary' | '/route-planner'
+  id: '__root__' | '/' | '/bayesian' | '/itinerary' | '/route-planner'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BayesianRoute: typeof BayesianRoute
+  ItineraryRoute: typeof ItineraryRoute
+  RoutePlannerRoute: typeof RoutePlannerRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +78,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/bayesian': {
+      id: '/bayesian'
+      path: '/bayesian'
+      fullPath: '/bayesian'
+      preLoaderRoute: typeof BayesianRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/itinerary': {
+      id: '/itinerary'
+      path: '/itinerary'
+      fullPath: '/itinerary'
+      preLoaderRoute: typeof ItineraryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/route-planner': {
+      id: '/route-planner'
+      path: '/route-planner'
+      fullPath: '/route-planner'
+      preLoaderRoute: typeof RoutePlannerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BayesianRoute: BayesianRoute,
+  ItineraryRoute: ItineraryRoute,
+  RoutePlannerRoute: RoutePlannerRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
