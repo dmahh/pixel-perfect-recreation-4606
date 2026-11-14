@@ -8,7 +8,7 @@ import { MapView } from "@/components/map/MapView";
 import type { MapLine, MapMarker, PinVariant } from "@/components/map/map-types";
 import { Explainer, PageHeader, Panel, Stat } from "@/components/site/kit";
 import { EDGES, aStar, dijkstra, partialPath } from "@/lib/astana/astar";
-import { LANDMARKS, LANDMARK_BY_ID } from "@/lib/astana/landmarks";
+import { LANDMARKS, getLandmark } from "@/lib/astana/landmarks";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/route-planner")({
@@ -44,7 +44,7 @@ function RoutePlannerPage() {
   const result = useMemo(() => aStar(start, goal), [start, goal]);
   const reference = useMemo(() => dijkstra(start, goal), [start, goal]);
   const last = result.steps.length - 1;
-  const step = result.steps[Math.min(index, last)];
+  const step = result.steps[Math.min(index, last)]!;
   const finished = index >= last;
 
   useEffect(() => {
@@ -88,7 +88,7 @@ function RoutePlannerPage() {
         text: l.id === start ? "S" : l.id === goal ? "G" : undefined,
       };
     });
-    const pt = (id: string): [number, number] => [LANDMARK_BY_ID[id].lat, LANDMARK_BY_ID[id].lng];
+    const pt = (id: string): [number, number] => [getLandmark(id).lat, getLandmark(id).lng];
     const lines: MapLine[] = [
       ...EDGES.map<MapLine>((e) => ({ id: `${e.from}-${e.to}`, variant: "edge", points: [pt(e.from), pt(e.to)] })),
       ...Object.entries(step.cameFrom).map<MapLine>(([to, from]) => ({
@@ -145,12 +145,12 @@ function RoutePlannerPage() {
             <span className="font-mono text-xs text-muted-foreground">
               step {index + 1}/{result.steps.length}
             </span>
-            <Slider min={0} max={last} step={1} value={[index]} onValueChange={([v]) => { setPlaying(false); setIndex(v); }} aria-label="Search step" />
+            <Slider min={0} max={last} step={1} value={[index]} onValueChange={([v]) => { setPlaying(false); setIndex(v ?? 0); }} aria-label="Search step" />
           </div>
         </Panel>
 
         <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-          <Stat label="Expanding" value={LANDMARK_BY_ID[step.current.id].shortName} hint={`f = ${r2(step.current.f)} km`} />
+          <Stat label="Expanding" value={getLandmark(step.current.id).shortName} hint={`f = ${r2(step.current.f)} km`} />
           <Stat label="Open set" value={step.open.length} />
           <Stat label="Closed set" value={step.closed.length} />
           <Stat
@@ -183,7 +183,7 @@ function RoutePlannerPage() {
                 ))}
                 {finished && (
                   <li className="px-2 py-1.5 text-highlight">
-                    Path: {result.path.map((id) => LANDMARK_BY_ID[id].shortName).join(" → ")} ({r2(result.cost)} km)
+                    Path: {result.path.map((id) => getLandmark(id).shortName).join(" → ")} ({r2(result.cost)} km)
                   </li>
                 )}
               </ol>
@@ -204,7 +204,7 @@ function RoutePlannerPage() {
                   <tbody>
                     {step.open.map((o, i) => (
                       <tr key={o.id} className={cn("border-t", i === 0 && "text-primary")}>
-                        <td className="py-1.5 font-sans">{LANDMARK_BY_ID[o.id].shortName}</td>
+                        <td className="py-1.5 font-sans">{getLandmark(o.id).shortName}</td>
                         <td className="py-1.5 text-right">{r2(o.g)}</td>
                         <td className="py-1.5 text-right">{r2(o.h)}</td>
                         <td className="py-1.5 text-right font-semibold">{r2(o.f)}</td>

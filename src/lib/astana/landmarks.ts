@@ -186,6 +186,12 @@ export const LANDMARK_BY_ID: Record<string, Landmark> = Object.fromEntries(
   LANDMARKS.map((l) => [l.id, l]),
 );
 
+export function getLandmark(id: string): Landmark {
+  const l = LANDMARK_BY_ID[id];
+  if (!l) throw new Error(`Unknown landmark: ${id}`);
+  return l;
+}
+
 export const CATEGORY_LABEL: Record<Category, string> = {
   museum: "Museum",
   park: "Park",

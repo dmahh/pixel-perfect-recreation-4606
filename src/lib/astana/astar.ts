@@ -1,5 +1,5 @@
 // A* search over a road graph connecting the Astana landmarks.
-import { LANDMARK_BY_ID, haversineKm } from "./landmarks";
+import { getLandmark, haversineKm } from "./landmarks";
 
 export interface Edge {
   from: string;
@@ -29,7 +29,7 @@ const LINKS: [string, string, number][] = [
 export const EDGES: Edge[] = LINKS.map(([from, to, factor]) => ({
   from,
   to,
-  km: Math.round(haversineKm(LANDMARK_BY_ID[from], LANDMARK_BY_ID[to]) * factor * 100) / 100,
+  km: Math.round(haversineKm(getLandmark(from), getLandmark(to)) * factor * 100) / 100,
 }));
 
 export type Graph = Record<string, { to: string; km: number }[]>;
@@ -47,7 +47,7 @@ export const ROAD_GRAPH = buildGraph();
 
 /** Admissible heuristic: straight-line distance never exceeds road distance. */
 export function heuristic(a: string, b: string) {
-  return haversineKm(LANDMARK_BY_ID[a], LANDMARK_BY_ID[b]);
+  return haversineKm(getLandmark(a), getLandmark(b));
 }
 
 export interface OpenEntry {
@@ -87,10 +87,10 @@ export function aStar(start: string, goal: string, graph: Graph = ROAD_GRAPH): A
   const steps: AStarStep[] = [];
 
   while (open.size > 0) {
-    const current = [...open.values()].sort((a, b) => a.f - b.f || a.h - b.h)[0];
+    const current = [...open.values()].sort((a, b) => a.f - b.f || a.h - b.h)[0]!;
     open.delete(current.id);
     closed.add(current.id);
-    const name = LANDMARK_BY_ID[current.id].shortName;
+    const name = getLandmark(current.id).shortName;
 
     if (current.id === goal) {
       steps.push({
@@ -103,18 +103,17 @@ export function aStar(start: string, goal: string, graph: Graph = ROAD_GRAPH): A
         message: `Pop ${name} (f=${r2(current.f)}). Goal reached — reconstruct path through cameFrom.`,
         isGoal: true,
       });
-      const path = [goal];
-      while (path[0] !== start) path.unshift(cameFrom[path[0]]);
-      return { found: true, path, cost: g[goal], steps };
+      return { found: true, path: partialPath(cameFrom, goal, start), cost: current.g, steps };
     }
 
     const updates: AStarStep["updates"] = [];
     for (const { to, km } of graph[current.id] ?? []) {
       if (closed.has(to)) continue;
-      const tentative = g[current.id] + km;
+      const tentative = current.g + km;
       const h = heuristic(to, goal);
-      if (g[to] === undefined || tentative < g[to] - 1e-9) {
-        const status = g[to] === undefined ? "new" : "improved";
+      const known = g[to];
+      if (known === undefined || tentative < known - 1e-9) {
+        const status = known === undefined ? "new" : "improved";
         g[to] = tentative;
         cameFrom[to] = current.id;
         open.set(to, { id: to, g: tentative, h, f: tentative + h });
@@ -125,7 +124,7 @@ export function aStar(start: string, goal: string, graph: Graph = ROAD_GRAPH): A
     }
 
     const summary = updates
-      .map((u) => `${LANDMARK_BY_ID[u.id].shortName} ${u.status === "skipped" ? "kept (no better g)" : `${u.status} f=${r2(u.f)}`}`)
+      .map((u) => `${getLandmark(u.id).shortName} ${u.status === "skipped" ? "kept (no better g)" : `${u.status} f=${r2(u.f)}`}`)
       .join("; ");
     steps.push({
       iteration: steps.length + 1,
@@ -150,13 +149,15 @@ export function dijkstra(start: string, goal: string, graph: Graph = ROAD_GRAPH)
   while (true) {
     const next = Object.keys(dist)
       .filter((k) => !done.has(k))
-      .sort((a, b) => dist[a] - dist[b])[0];
+      .sort((a, b) => (dist[a] ?? Infinity) - (dist[b] ?? Infinity))[0];
     if (next === undefined) return { cost: Infinity, expanded };
     done.add(next);
     expanded++;
-    if (next === goal) return { cost: dist[goal], expanded };
+    const d = dist[next] ?? Infinity;
+    if (next === goal) return { cost: d, expanded };
     for (const { to, km } of graph[next] ?? []) {
-      if (dist[to] === undefined || dist[next] + km < dist[to]) dist[to] = dist[next] + km;
+      const known = dist[to];
+      if (known === undefined || d + km < known) dist[to] = d + km;
     }
   }
 }
@@ -165,6 +166,10 @@ export function dijkstra(start: string, goal: string, graph: Graph = ROAD_GRAPH)
 export function partialPath(cameFrom: Record<string, string>, node: string, start: string) {
   const path = [node];
   let guard = 0;
-  while (path[0] !== start && cameFrom[path[0]] && guard++ < 50) path.unshift(cameFrom[path[0]]);
+  let prev = cameFrom[node];
+  while (path[0] !== start && prev && guard++ < 50) {
+    path.unshift(prev);
+    prev = cameFrom[prev];
+  }
   return path;
 }

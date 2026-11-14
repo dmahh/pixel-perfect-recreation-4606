@@ -122,7 +122,7 @@ function ItineraryPage() {
                 max={30000}
                 step={500}
                 value={[prefs.budget]}
-                onValueChange={([v]) => setPrefs((p) => ({ ...p, budget: v }))}
+                onValueChange={([v]) => setPrefs((p) => ({ ...p, budget: v ?? p.budget }))}
                 aria-label="Budget in tenge"
               />
               <div className="mt-3 flex flex-wrap gap-2">
@@ -145,7 +145,7 @@ function ItineraryPage() {
                 max={12}
                 step={0.5}
                 value={[prefs.hours]}
-                onValueChange={([v]) => setPrefs((p) => ({ ...p, hours: v }))}
+                onValueChange={([v]) => setPrefs((p) => ({ ...p, hours: v ?? p.hours }))}
                 aria-label="Available hours"
               />
             </div>

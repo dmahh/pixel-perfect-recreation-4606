@@ -214,6 +214,11 @@
   background: var(--muted);
 }
 
+/* Silver basemap so the blue route and pins stand out. */
+.leaflet-tile-pane {
+  filter: grayscale(0.9) contrast(0.92) brightness(1.04);
+}
+
 .map-pin {
   display: grid;
   place-items: center;

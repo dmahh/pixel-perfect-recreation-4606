@@ -22,7 +22,7 @@ export interface MapMarker {
   lng: number;
   label: string;
   variant: PinVariant;
-  text?: string;
+  text?: string | undefined;
 }
 
 export interface MapLine {

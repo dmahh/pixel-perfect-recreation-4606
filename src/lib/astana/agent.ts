@@ -71,7 +71,7 @@ export function landmarkUtility(landmark: Landmark, interests: Interest[]) {
 }
 
 export function generateItinerary(prefs: UserPreferences, landmarks: Landmark[] = LANDMARKS): Itinerary {
-  const start = START_POINTS.find((s) => s.id === prefs.startId) ?? START_POINTS[0];
+  const start = START_POINTS.find((s) => s.id === prefs.startId) ?? START_POINTS[0]!;
   const log: AgentLogEntry[] = [];
   log.push({
     type: "percept",

@@ -28,3 +28,9 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Project rules
+
+- AI logic (itinerary agent, A*, Bayesian inference) lives as pure functions in `src/lib/astana/`, with tests in `astana.test.ts`; routes only render it. Why: keeps the algorithms testable and independent of UI.
+- Maps use Leaflet + OpenStreetMap tiles, loaded only in the browser via `src/components/map/MapView.tsx` (lazy + ClientOnly). Why: Leaflet touches `window` at import and breaks SSR; no API key is needed.
+- All app data is static sample data in `src/lib/astana/landmarks.ts`; there is no backend. Why: MVP brief needs no persistence.

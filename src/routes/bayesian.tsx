@@ -253,7 +253,7 @@ function NetworkGraph({
   input: BayesianInput;
   bySetting: Record<"indoor" | "outdoor" | "mixed", number>;
 }) {
-  const label = (v: string) => (v === "unknown" ? "prior" : v[0].toUpperCase() + v.slice(1));
+  const label = (v: string) => (v === "unknown" ? "prior" : v.charAt(0).toUpperCase() + v.slice(1));
   const nodes = [
     { id: "w", x: 70, y: 40, title: "Weather", value: label(input.weather), kind: "evidence" },
     { id: "s", x: 250, y: 40, title: "Season", value: label(input.season), kind: "evidence" },
@@ -261,8 +261,9 @@ function NetworkGraph({
     { id: "r", x: 250, y: 140, title: "Crowd high", value: pct(pCrowd), kind: "hidden" },
     { id: "q", x: 160, y: 240, title: "Suitable", value: `${pct(bySetting.indoor)} in · ${pct(bySetting.outdoor)} out`, kind: "query" },
   ] as const;
-  const edges = [["w", "c"], ["s", "c"], ["s", "r"], ["c", "q"], ["r", "q"]];
-  const pos = Object.fromEntries(nodes.map((n) => [n.id, n]));
+  type NodeId = (typeof nodes)[number]["id"];
+  const edges: [NodeId, NodeId][] = [["w", "c"], ["s", "c"], ["s", "r"], ["c", "q"], ["r", "q"]];
+  const pos = (id: NodeId) => nodes.find((n) => n.id === id)!;
   return (
     <svg viewBox="0 0 320 285" className="w-full" role="img" aria-label="Bayesian network diagram">
       <defs>
@@ -271,8 +272,8 @@ function NetworkGraph({
         </marker>
       </defs>
       {edges.map(([a, b]) => {
-        const A = pos[a];
-        const B = pos[b];
+        const A = pos(a);
+        const B = pos(b);
         return (
           <line key={a + b} x1={A.x} y1={A.y + 22} x2={B.x} y2={B.y - 24} className="stroke-silver" strokeWidth={2} markerEnd="url(#arrow)" />
         );
