@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Clock, Footprints, Sparkles, Wallet } from "lucide-react";
+import { Check, Clock, CloudUpload, Footprints, Sparkles, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { MapView } from "@/components/map/MapView";
@@ -15,11 +16,12 @@ import {
 import {
   CATEGORY_LABEL,
   INTERESTS,
-  LANDMARKS,
   formatHours,
   formatKzt,
   type Interest,
 } from "@/lib/astana/landmarks";
+import { landmarksQueryOptions } from "@/lib/astana/landmarks.functions";
+import { loadPreferences, savePreferences } from "@/lib/astana/preferences";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/itinerary")({
@@ -40,6 +42,9 @@ export const Route = createFileRoute("/itinerary")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  loader: ({ context }) => {
+    void context.queryClient.ensureQueryData(landmarksQueryOptions());
+  },
   component: ItineraryPage,
 });
 
@@ -51,9 +56,31 @@ const DEFAULT_PREFS: UserPreferences = {
 };
 
 function ItineraryPage() {
+  const { data: kb } = useSuspenseQuery(landmarksQueryOptions());
+  const LANDMARKS = kb.landmarks;
   const [prefs, setPrefs] = useState<UserPreferences>(DEFAULT_PREFS);
-  const [result, setResult] = useState(() => generateItinerary(DEFAULT_PREFS));
+  const [result, setResult] = useState(() => generateItinerary(DEFAULT_PREFS, LANDMARKS));
   const [runId, setRunId] = useState(0);
+  const [restored, setRestored] = useState(false);
+
+  // Restore this browser's saved preferences from Lovable Cloud.
+  useEffect(() => {
+    let cancelled = false;
+    loadPreferences()
+      .then((saved) => {
+        if (cancelled || !saved) return;
+        setPrefs(saved);
+        setResult(generateItinerary(saved, LANDMARKS));
+        setRunId((n) => n + 1);
+        setRestored(true);
+      })
+      .catch((e) => console.error("Could not load saved preferences", e));
+    return () => {
+      cancelled = true;
+    };
+  }, [LANDMARKS]);
+
+  const save = useMutation({ mutationFn: savePreferences });
 
   const toggleInterest = (id: Interest) =>
     setPrefs((p) => ({
@@ -62,8 +89,9 @@ function ItineraryPage() {
     }));
 
   const run = () => {
-    setResult(generateItinerary(prefs));
+    setResult(generateItinerary(prefs, LANDMARKS));
     setRunId((n) => n + 1);
+    save.mutate(prefs);
   };
 
   const { markers, lines } = useMemo(() => {
@@ -99,7 +127,7 @@ function ItineraryPage() {
         ]
       : [];
     return { markers, lines };
-  }, [result]);
+  }, [result, LANDMARKS]);
 
   return (
     <>
@@ -184,6 +212,19 @@ function ItineraryPage() {
             <Button variant="hero" size="lg" className="w-full" onClick={run}>
               <Sparkles /> Generate itinerary
             </Button>
+            <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground" aria-live="polite">
+              {save.isPending ? (
+                <><CloudUpload className="h-3.5 w-3.5" /> Saving your preferences…</>
+              ) : save.isError ? (
+                <span className="text-destructive">Couldn't save preferences — try again.</span>
+              ) : save.isSuccess ? (
+                <><Check className="h-3.5 w-3.5 text-primary" /> Preferences saved on this browser</>
+              ) : restored ? (
+                <><Check className="h-3.5 w-3.5 text-primary" /> Restored your last saved preferences</>
+              ) : (
+                "Your preferences are saved when you generate."
+              )}
+            </p>
           </div>
         </Panel>
 
@@ -221,6 +262,7 @@ function ItineraryPage() {
                         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1.5"><CategoryDot category={s.landmark.category} />{CATEGORY_LABEL[s.landmark.category]}</span>
                           <span>{formatKzt(s.landmark.cost)}</span>
+                          <span>Popularity {s.landmark.popularity}</span>
                           <span>{Math.round(s.travelHours * 60)} min travel</span>
                           {s.matched.length > 0 && <span className="text-primary">matches {s.matched.join(", ")}</span>}
                         </div>

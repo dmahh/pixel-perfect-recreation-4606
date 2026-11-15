@@ -3,7 +3,9 @@ import { ArrowRight, BrainCircuit, Route as RouteIcon, Sparkles, Waypoints } fro
 import heroImage from "@/assets/astana-skyline.jpg";
 import { Button } from "@/components/ui/button";
 import { CategoryDot } from "@/components/site/kit";
-import { CATEGORY_LABEL, LANDMARKS, formatKzt } from "@/lib/astana/landmarks";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { CATEGORY_LABEL, formatKzt, formatHours } from "@/lib/astana/landmarks";
+import { landmarksQueryOptions } from "@/lib/astana/landmarks.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -23,6 +25,9 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  loader: ({ context }) => {
+    void context.queryClient.ensureQueryData(landmarksQueryOptions());
+  },
   component: Index,
 });
 
@@ -61,6 +66,8 @@ const STEPS = [
 ];
 
 function Index() {
+  const { data: kb } = useSuspenseQuery(landmarksQueryOptions());
+  const LANDMARKS = kb.landmarks;
   return (
     <>
       <section className="relative isolate overflow-hidden bg-navy">
@@ -146,7 +153,7 @@ function Index() {
                   <div>
                     <p className="text-sm font-semibold">{l.name}</p>
                     <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <CategoryDot category={l.category} /> {CATEGORY_LABEL[l.category]} · ★ {l.rating}
+                      <CategoryDot category={l.category} /> {CATEGORY_LABEL[l.category]} · ★ {l.rating} · {formatHours(l.visitHours)} · popularity {l.popularity}
                     </p>
                   </div>
                   <span className="shrink-0 font-mono text-xs text-muted-foreground">{formatKzt(l.cost)}</span>

@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { landmarksQueryOptions } from "@/lib/astana/landmarks.functions";
 import { createFileRoute } from "@tanstack/react-router";
 import { CloudSun, Leaf } from "lucide-react";
 import { MapView } from "@/components/map/MapView";
@@ -34,6 +36,9 @@ export const Route = createFileRoute("/bayesian")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  loader: ({ context }) => {
+    void context.queryClient.ensureQueryData(landmarksQueryOptions());
+  },
   component: BayesianPage,
 });
 
@@ -43,7 +48,8 @@ const levelBar = { high: "bg-success", medium: "bg-highlight", low: "bg-destruct
 
 function BayesianPage() {
   const [input, setInput] = useState<BayesianInput>({ weather: "sunny", season: "summer" });
-  const out = useMemo(() => infer(input), [input]);
+  const { data: kb } = useSuspenseQuery(landmarksQueryOptions());
+  const out = useMemo(() => infer(input, kb.landmarks), [input, kb.landmarks]);
 
   const markers = useMemo<MapMarker[]>(
     () =>

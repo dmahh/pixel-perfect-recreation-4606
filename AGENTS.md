@@ -33,4 +33,5 @@ use the editor.
 
 - AI logic (itinerary agent, A*, Bayesian inference) lives as pure functions in `src/lib/astana/`, with tests in `astana.test.ts`; routes only render it. Why: keeps the algorithms testable and independent of UI.
 - Maps use Leaflet + OpenStreetMap tiles, loaded only in the browser via `src/components/map/MapView.tsx` (lazy + ClientOnly). Why: Leaflet touches `window` at import and breaks SSR; no API key is needed.
-- All app data is static sample data in `src/lib/astana/landmarks.ts`; there is no backend. Why: MVP brief needs no persistence.
+- Landmarks are read from the Lovable Cloud `landmarks` table via `listLandmarks` (public server fn), falling back to the bundled copy in `landmarks.ts`; the A* road graph stays static. Why: one source of truth, while the app still works if the backend is down.
+- Visitor preferences are saved per browser without sign-in: a random token in localStorage, read/written only through security-definer RPCs (`get_/save_tourist_preferences`); the table itself has no client grants. Why: user chose no accounts; the token acts as the secret.

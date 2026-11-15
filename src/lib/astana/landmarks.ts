@@ -26,6 +26,8 @@ export interface Landmark {
   interests: Interest[];
   setting: Setting;
   rating: number;
+  /** Popularity score, 0–100 (sample values). */
+  popularity: number;
   description: string;
 }
 
@@ -42,6 +44,7 @@ export const LANDMARKS: Landmark[] = [
     interests: ["architecture", "photography", "history"],
     setting: "mixed",
     rating: 4.8,
+    popularity: 98,
     description:
       "A 97-metre 'tree of life' holding a golden egg. The observation deck height marks 1997, the year Astana became the capital.",
   },
@@ -57,6 +60,7 @@ export const LANDMARKS: Landmark[] = [
     interests: ["shopping", "architecture", "photography"],
     setting: "indoor",
     rating: 4.6,
+    popularity: 92,
     description:
       "Norman Foster's 150-metre transparent tent, home to shops, an indoor park and a rooftop beach resort.",
   },
@@ -72,6 +76,7 @@ export const LANDMARKS: Landmark[] = [
     interests: ["architecture", "culture", "spirituality"],
     setting: "indoor",
     rating: 4.7,
+    popularity: 80,
     description:
       "A 62-metre glass pyramid built to host the Congress of Leaders of World and Traditional Religions.",
   },
@@ -87,6 +92,7 @@ export const LANDMARKS: Landmark[] = [
     interests: ["spirituality", "architecture", "culture"],
     setting: "indoor",
     rating: 4.8,
+    popularity: 85,
     description:
       "One of the largest mosques in Central Asia, built in classical Islamic style with traditional Kazakh ornament.",
   },
@@ -102,6 +108,7 @@ export const LANDMARKS: Landmark[] = [
     interests: ["history", "culture"],
     setting: "indoor",
     rating: 4.8,
+    popularity: 82,
     description:
       "The largest museum in Central Asia: the Golden Man hall, ethnography and the story of independent Kazakhstan.",
   },
@@ -117,6 +124,7 @@ export const LANDMARKS: Landmark[] = [
     interests: ["science", "architecture", "photography"],
     setting: "indoor",
     rating: 4.7,
+    popularity: 88,
     description:
       "The 100-metre glass sphere built for EXPO-2017, with eight floors on renewable and future energy.",
   },
@@ -132,6 +140,7 @@ export const LANDMARKS: Landmark[] = [
     interests: ["history", "culture", "nature"],
     setting: "outdoor",
     rating: 4.3,
+    popularity: 60,
     description:
       "An open-air map of Kazakhstan in miniature, with models of landmarks from every region of the country.",
   },
@@ -147,6 +156,7 @@ export const LANDMARKS: Landmark[] = [
     interests: ["nature", "photography"],
     setting: "outdoor",
     rating: 4.5,
+    popularity: 75,
     description:
       "A riverside park on the right bank of the Esil with a long promenade, lawns and a family amusement area.",
   },
@@ -162,6 +172,7 @@ export const LANDMARKS: Landmark[] = [
     interests: ["nature", "photography"],
     setting: "outdoor",
     rating: 4.6,
+    popularity: 70,
     description:
       "Wide landscaped park on the left bank with lakes, walking loops and views of Ak Orda and the Pyramid.",
   },
@@ -177,6 +188,7 @@ export const LANDMARKS: Landmark[] = [
     interests: ["nature", "science", "photography"],
     setting: "mixed",
     rating: 4.5,
+    popularity: 72,
     description:
       "Gardens with more than a thousand plant species and a tropical greenhouse, a short walk from Khan Shatyr.",
   },
