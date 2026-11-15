@@ -1,5 +1,5 @@
 // Utility-based intelligent agent that builds an itinerary from user preferences.
-import { LANDMARKS, haversineKm, type Interest, type Landmark } from "./landmarks";
+import { LANDMARKS, haversineKm, type Category, type Interest, type Landmark } from "./landmarks";
 
 export interface StartPoint {
   id: string;
@@ -62,16 +62,25 @@ export function travelHours(a: { lat: number; lng: number }, b: { lat: number; l
   return (haversineKm(a, b) * ROAD_FACTOR) / CITY_SPEED_KMH + TRANSFER_BUFFER_H;
 }
 
-/** Utility in [0, 1]: 70% interest match, 30% visitor rating. */
+const CATEGORY_INTERESTS: Record<Category, Interest[]> = {
+  museum: ["history", "culture", "science"],
+  park: ["nature"],
+  monument: ["architecture", "spirituality"],
+};
+
+/** Utility in [0, 1]: 60% interest match, 15% category match, 25% popularity. */
 export function landmarkUtility(landmark: Landmark, interests: Interest[]) {
-  const matched = landmark.interests.filter((i) => interests.includes(i));
-  const match = interests.length === 0 ? 0.5 : matched.length / Math.min(interests.length, 3);
-  const ratingScore = (landmark.rating - 4) / 1;
-  return { utility: 0.7 * Math.min(match, 1) + 0.3 * ratingScore, matched };
+  const chosen = [...new Set(interests)];
+  const matched = landmark.interests.filter((i) => chosen.includes(i));
+  const match = chosen.length === 0 ? 0.5 : matched.length / Math.min(chosen.length, 3);
+  const categoryMatch = chosen.length === 0 ? 0.5 : Number(CATEGORY_INTERESTS[landmark.category].some((i) => chosen.includes(i)));
+  const popularity = Math.max(0, Math.min(100, landmark.popularity)) / 100;
+  return { utility: 0.6 * Math.min(match, 1) + 0.15 * categoryMatch + 0.25 * popularity, matched, categoryMatch };
 }
 
 export function generateItinerary(prefs: UserPreferences, landmarks: Landmark[] = LANDMARKS): Itinerary {
-  const start = START_POINTS.find((s) => s.id === prefs.startId) ?? START_POINTS[0]!;
+  const start = START_POINTS.find((s) => s.id === prefs.startId) ?? START_POINTS[0];
+  if (!start) throw new Error("No starting points configured");
   const log: AgentLogEntry[] = [];
   log.push({
     type: "percept",
@@ -80,7 +89,7 @@ export function generateItinerary(prefs: UserPreferences, landmarks: Landmark[] 
 
   const candidates = landmarks
     .map((l) => ({ landmark: l, ...landmarkUtility(l, prefs.interests) }))
-    .filter((c) => prefs.interests.length === 0 || c.matched.length > 0);
+    .filter((c) => prefs.interests.length === 0 || c.matched.length > 0 || c.categoryMatch > 0);
 
   const skipped = landmarks.length - candidates.length;
   log.push({
@@ -120,8 +129,8 @@ export function generateItinerary(prefs: UserPreferences, landmarks: Landmark[] 
         }
         continue;
       }
-      // Rational choice: maximise utility minus a travel-time penalty.
-      const value = c.utility - 0.25 * travel;
+      // Greedy heuristic: most relevance/popularity per hour of travel and visiting.
+      const value = c.utility / needed;
       if (!best || value > best.value) best = { c, travel, value };
     }
     if (!best) break;
@@ -139,7 +148,7 @@ export function generateItinerary(prefs: UserPreferences, landmarks: Landmark[] 
     });
     log.push({
       type: "select",
-      message: `Act: go to ${best.c.landmark.shortName} (utility ${best.c.utility.toFixed(2)}, travel ${Math.round(best.travel * 60)} min, value ${best.value.toFixed(2)}).`,
+      message: `Act: go to ${best.c.landmark.shortName} (popularity ${best.c.landmark.popularity}/100, utility ${best.c.utility.toFixed(2)}, travel ${Math.round(best.travel * 60)} min, visit ${Math.round(best.c.landmark.visitHours * 60)} min, score ${best.value.toFixed(2)}/h).`,
     });
     time = leaveAt;
     spent += best.c.landmark.cost;

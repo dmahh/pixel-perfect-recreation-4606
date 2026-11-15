@@ -60,6 +60,7 @@ function ItineraryPage() {
   const LANDMARKS = kb.landmarks;
   const [prefs, setPrefs] = useState<UserPreferences>(DEFAULT_PREFS);
   const [result, setResult] = useState(() => generateItinerary(DEFAULT_PREFS, LANDMARKS));
+  const [generatedPrefs, setGeneratedPrefs] = useState<UserPreferences>(DEFAULT_PREFS);
   const [runId, setRunId] = useState(0);
   const [restored, setRestored] = useState(false);
 
@@ -70,6 +71,7 @@ function ItineraryPage() {
       .then((saved) => {
         if (cancelled || !saved) return;
         setPrefs(saved);
+        setGeneratedPrefs(saved);
         setResult(generateItinerary(saved, LANDMARKS));
         setRunId((n) => n + 1);
         setRestored(true);
@@ -90,6 +92,7 @@ function ItineraryPage() {
 
   const run = () => {
     setResult(generateItinerary(prefs, LANDMARKS));
+    setGeneratedPrefs(prefs);
     setRunId((n) => n + 1);
     save.mutate(prefs);
   };
@@ -194,17 +197,19 @@ function ItineraryPage() {
               <p className="flex items-center gap-2 text-sm font-medium"><Footprints className="h-4 w-4 text-primary" /> Starting point</p>
               <div className="mt-3 grid gap-2">
                 {START_POINTS.map((s) => (
-                  <button
+                  <Button
                     key={s.id}
                     type="button"
+                    variant="outline"
+                    aria-pressed={prefs.startId === s.id}
                     onClick={() => setPrefs((p) => ({ ...p, startId: s.id }))}
                     className={cn(
-                      "rounded-lg border px-3 py-2 text-left text-sm transition-colors",
+                      "h-auto justify-start whitespace-normal rounded-lg border px-3 py-2 text-left text-sm transition-colors",
                       prefs.startId === s.id ? "border-primary bg-accent text-accent-foreground" : "bg-card hover:border-primary/40",
                     )}
                   >
                     {s.label}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -231,8 +236,8 @@ function ItineraryPage() {
         <div className="min-w-0 space-y-6">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Stat label="Stops" value={result.stops.length} />
-            <Stat label="Spend" value={formatKzt(result.totalCost)} hint={`of ${prefs.budget.toLocaleString("en-US")} ₸`} />
-            <Stat label="Time used" value={formatHours(result.totalHours)} />
+            <Stat label="Estimated cost" value={`${result.totalCost.toLocaleString("en-US")} ₸`} hint={`of ${generatedPrefs.budget.toLocaleString("en-US")} ₸ · visits only`} />
+            <Stat label="Estimated time" value={formatHours(result.totalHours)} hint={`of ${formatHours(generatedPrefs.hours)} · includes travel`} />
             <Stat label="Avg utility" value={result.stops.length ? (result.stops.reduce((s, x) => s + x.utility, 0) / result.stops.length).toFixed(2) : "—"} />
           </div>
 
@@ -262,7 +267,8 @@ function ItineraryPage() {
                         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1.5"><CategoryDot category={s.landmark.category} />{CATEGORY_LABEL[s.landmark.category]}</span>
                           <span>{formatKzt(s.landmark.cost)}</span>
-                          <span>Popularity {s.landmark.popularity}</span>
+                           <span>Popularity {s.landmark.popularity}/100</span>
+                           <span>{formatHours(s.landmark.visitHours)} visit</span>
                           <span>{Math.round(s.travelHours * 60)} min travel</span>
                           {s.matched.length > 0 && <span className="text-primary">matches {s.matched.join(", ")}</span>}
                         </div>
@@ -308,9 +314,9 @@ function ItineraryPage() {
       >
         <p>
           This is a <strong className="text-navy-foreground">utility-based agent</strong> with a greedy policy. Each landmark gets
-          utility U = 0.7 · interest match + 0.3 · rating score. At every step the agent only considers actions that keep spend ≤
+          utility U = 0.6 · interest match + 0.15 · category match + 0.25 · popularity/100. At every step the agent only considers actions that keep spend ≤
           budget and time ≤ available hours (travel at {"~"}20 km/h × 1.3 road factor + 5 min), then picks the one maximising
-          U − 0.25 · travel hours. It stops when no feasible action remains.
+          U / (visit hours + travel hours). It stops when no feasible action remains; this heuristic does not guarantee a globally optimal itinerary.
         </p>
       </Explainer>
     </>
