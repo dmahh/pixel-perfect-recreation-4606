@@ -2,10 +2,12 @@ import { useMemo, useState } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { landmarksQueryOptions } from "@/lib/astana/landmarks.functions";
 import { createFileRoute } from "@tanstack/react-router";
-import { CloudSun, Leaf } from "lucide-react";
+import { CloudSun, Leaf, Sun, Cloud, CloudRain, Snowflake } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { SuitabilityChart } from "@/components/map/SuitabilityChart";
 import { MapView } from "@/components/map/MapView";
 import type { MapMarker } from "@/components/map/map-types";
-import { CategoryDot, Chip, Explainer, PageHeader, Panel } from "@/components/site/kit";
+import { CategoryDot, Explainer, PageHeader, Panel } from "@/components/site/kit";
 import {
   P_COMFORT,
   P_CROWD_HIGH,
@@ -42,7 +44,8 @@ export const Route = createFileRoute("/bayesian")({
   component: BayesianPage,
 });
 
-const pct = (p: number) => `${Math.round(p * 100)}%`;
+const pct = (p: number) => `${(p * 100).toFixed(1)}%`;
+const weatherIcons = { sunny: Sun, cloudy: Cloud, rainy: CloudRain, snowy: Snowflake, unknown: CloudSun };
 const level = (p: number) => (p >= 0.7 ? "high" : p >= 0.5 ? "medium" : "low") as "high" | "medium" | "low";
 const levelBar = { high: "bg-success", medium: "bg-highlight", low: "bg-destructive" };
 
@@ -50,6 +53,8 @@ function BayesianPage() {
   const [input, setInput] = useState<BayesianInput>({ weather: "sunny", season: "summer" });
   const { data: kb } = useSuspenseQuery(landmarksQueryOptions());
   const out = useMemo(() => infer(input, kb.landmarks), [input, kb.landmarks]);
+  const weatherLabel = WEATHERS.find(w => w.id === input.weather)?.label ?? "Unknown weather";
+  const seasonLabel = SEASONS.find(s => s.id === input.season)?.label ?? "Unknown season";
 
   const markers = useMemo<MapMarker[]>(
     () =>
@@ -66,38 +71,36 @@ function BayesianPage() {
 
   return (
     <>
-      <PageHeader code="03" concept="Probabilistic reasoning" title="Which attractions suit today?">
-        Set the evidence. The network sums over hidden comfort and crowd variables to give each place a probability
-        of being a good visit.
+      <PageHeader code="03" concept="Probabilistic reasoning" title="Astana attraction suitability">
+        {weatherLabel} · {seasonLabel}
       </PageHeader>
 
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[360px_1fr]">
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <Panel title="Evidence">
             <div className="space-y-5">
               <div>
                 <p className="flex items-center gap-2 text-sm font-medium"><CloudSun className="h-4 w-4 text-primary" /> Weather</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {[...WEATHERS, { id: "unknown" as const, label: "Unknown" }].map((w) => (
-                    <Chip key={w.id} active={input.weather === w.id} onClick={() => setInput((i) => ({ ...i, weather: w.id }))}>
-                      {w.label}
-                    </Chip>
-                  ))}
+                <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Weather conditions">
+                  {[...WEATHERS, { id: "unknown" as const, label: "Unknown" }].map((w) => {
+                    const Icon = weatherIcons[w.id];
+                    return <Button size="sm" key={w.id} variant={input.weather === w.id ? "default" : "outline"} aria-pressed={input.weather === w.id} onClick={() => setInput((i) => ({ ...i, weather: w.id }))}>
+                      <Icon />{w.label}
+                    </Button>;
+                  })}
                 </div>
               </div>
               <div>
                 <p className="flex items-center gap-2 text-sm font-medium"><Leaf className="h-4 w-4 text-primary" /> Season</p>
-                <div className="mt-3 flex flex-wrap gap-2">
+                <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Season">
                   {[...SEASONS, { id: "unknown" as const, label: "Unknown" }].map((s) => (
-                    <Chip key={s.id} active={input.season === s.id} onClick={() => setInput((i) => ({ ...i, season: s.id }))}>
+                    <Button size="sm" key={s.id} variant={input.season === s.id ? "default" : "outline"} aria-pressed={input.season === s.id} onClick={() => setInput((i) => ({ ...i, season: s.id }))}>
                       {s.label}
-                    </Chip>
+                    </Button>
                   ))}
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">
-                "Unknown" marginalises the variable using its prior instead of fixing it.
-              </p>
+              <p className="text-xs text-muted-foreground">Illustrative model estimates, not live weather forecasts or visitor survey results. Attractions with the same indoor/outdoor setting share a probability.</p>
             </div>
           </Panel>
           <Panel title="Network">
@@ -106,11 +109,16 @@ function BayesianPage() {
         </div>
 
         <div className="min-w-0 space-y-6">
+          <Panel title="Indoor vs. outdoor suitability">
+            <p className="mb-3 text-sm text-muted-foreground" role="status">{weatherLabel} · {seasonLabel} · {out.byLandmark.length} attractions</p>
+            <SuitabilityChart scores={out.bySetting} />
+          </Panel>
           <div className="grid gap-3 sm:grid-cols-3">
             {(Object.keys(out.byCategory) as Category[]).map((c) => (
-              <div key={c} className="surface p-4">
+              <div key={c} className="rounded-lg border bg-card p-4">
                 <p className="flex items-center gap-2 text-sm font-medium"><CategoryDot category={c} /> {CATEGORY_LABEL[c]}s</p>
                 <p className="mt-2 font-display text-3xl font-semibold">{pct(out.byCategory[c])}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Average suitability</p>
                 <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
                   <div className={cn("h-full rounded-full transition-all duration-500", levelBar[level(out.byCategory[c])])} style={{ width: pct(out.byCategory[c]) }} />
                 </div>
@@ -118,21 +126,21 @@ function BayesianPage() {
             ))}
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-2">
+          <div className="grid min-w-0 gap-6 xl:grid-cols-2">
             <Panel title="Suitability by attraction">
               <ul className="space-y-3">
                 {out.byLandmark.map(({ landmark, p }) => (
                   <li key={landmark.id}>
-                    <div className="flex items-baseline justify-between gap-3 text-sm">
+                    <div className="flex items-start justify-between gap-3 text-sm">
                       <span className="flex min-w-0 items-center gap-2">
                         <CategoryDot category={landmark.category} />
-                        <span className="truncate font-medium">{landmark.name}</span>
+                        <span className="font-medium">{landmark.name}</span>
                       </span>
                       <span className="shrink-0 font-mono text-xs">{pct(p)}</span>
                     </div>
                     <div className="mt-1.5 flex items-center gap-3">
-                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-                        <div className={cn("h-full rounded-full transition-all duration-500", levelBar[level(p)])} style={{ width: pct(p) }} />
+                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted" role="meter" aria-label={`${landmark.name} suitability`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Number((p * 100).toFixed(1))} aria-valuetext={pct(p)}>
+                        <div className={cn("h-full rounded-full motion-safe:transition-all motion-safe:duration-500", levelBar[level(p)])} style={{ width: pct(p) }} />
                       </div>
                       <span className="w-24 shrink-0 text-right text-[0.7rem] text-muted-foreground">{SETTING_LABEL[landmark.setting]}</span>
                     </div>
@@ -142,7 +150,11 @@ function BayesianPage() {
             </Panel>
             <div className="space-y-3">
               <MapView className="h-[340px] xl:h-[420px]" markers={markers} fitKey="bayes" />
-              <p className="text-xs text-muted-foreground">Pins show P(suitable) in %. Green ≥ 70%, gold ≥ 50%, red below.</p>
+              <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-success" />High ≥ 70%</span>
+                <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-highlight" />Moderate 50–69.9%</span>
+                <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-destructive" />Low &lt; 50%</span>
+              </div>
             </div>
           </div>
 
@@ -161,7 +173,7 @@ function BayesianPage() {
       <Explainer
         title="Exact inference by enumeration"
         items={[
-          { term: "Root nodes", text: "Weather and Season are independent causes with priors learned from Astana's climate." },
+          { term: "Root nodes", text: "Weather and Season are independent causes with illustrative prior probabilities. Unknown evidence uses these priors." },
           { term: "Hidden nodes", text: "Comfort depends on weather and season; Crowd depends only on the season." },
           { term: "Query node", text: "Suitable depends on Comfort, Crowd and whether the attraction is indoor, outdoor or both." },
           { term: "Marginalisation", text: "Unobserved variables are summed out, weighting each case by its probability." },
@@ -269,7 +281,7 @@ function NetworkGraph({
   ] as const;
   type NodeId = (typeof nodes)[number]["id"];
   const edges: [NodeId, NodeId][] = [["w", "c"], ["s", "c"], ["s", "r"], ["c", "q"], ["r", "q"]];
-  const pos = (id: NodeId) => nodes.find((n) => n.id === id)!;
+  const pos = (id: NodeId) => nodes.find((n) => n.id === id);
   return (
     <svg viewBox="0 0 320 285" className="w-full" role="img" aria-label="Bayesian network diagram">
       <defs>
@@ -280,6 +292,7 @@ function NetworkGraph({
       {edges.map(([a, b]) => {
         const A = pos(a);
         const B = pos(b);
+        if (!A || !B) return null;
         return (
           <line key={a + b} x1={A.x} y1={A.y + 22} x2={B.x} y2={B.y - 24} className="stroke-silver" strokeWidth={2} markerEnd="url(#arrow)" />
         );
@@ -291,7 +304,7 @@ function NetworkGraph({
             <rect
               width={w}
               height={44}
-              rx={12}
+              rx={8}
               className={cn(
                 n.kind === "evidence" && "fill-navy",
                 n.kind === "hidden" && "fill-card stroke-primary/40",

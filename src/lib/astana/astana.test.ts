@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { generateItinerary, START_POINTS, travelHours } from "./agent";
 import { aStar, dijkstra } from "./astar";
-import { infer, pSuitable } from "./bayes";
+import { infer, pSuitable, P_WEATHER, P_SEASON, WEATHERS, SEASONS } from "./bayes";
 import { LANDMARKS, type Landmark } from "./landmarks";
 
 const fixture = (id: string, overrides: Partial<Landmark> = {}): Landmark => ({
@@ -127,6 +127,36 @@ describe("A* route planner", () => {
 });
 
 describe("Bayesian network", () => {
+  it("produces bounded scores for all weather and season combinations and all attractions", () => {
+    for (const weather of [...WEATHERS.map(w => w.id), "unknown" as const]) {
+      for (const season of [...SEASONS.map(s => s.id), "unknown" as const]) {
+        const result = infer({ weather, season });
+        expect(result.byLandmark).toHaveLength(10);
+        for (const { landmark, p } of result.byLandmark) {
+          expect(p).toBeGreaterThanOrEqual(0);
+          expect(p).toBeLessThanOrEqual(1);
+          expect(p).toBe(result.bySetting[landmark.setting]);
+        }
+        expect(result.byLandmark.map(row => row.p)).toEqual(result.byLandmark.map(row => row.p).sort((a, b) => b - a));
+      }
+    }
+  });
+
+  it("weights unknown evidence by its prior rather than treating it as a fixed condition", () => {
+    const weatherAverage = WEATHERS.reduce((sum, w) => sum + P_WEATHER[w.id] * pSuitable("outdoor", { weather: w.id, season: "summer" }), 0);
+    expect(pSuitable("outdoor", { weather: "unknown", season: "summer" })).toBeCloseTo(weatherAverage, 10);
+    const seasonAverage = SEASONS.reduce((sum, s) => sum + P_SEASON[s.id] * pSuitable("indoor", { weather: "unknown", season: s.id }), 0);
+    expect(pSuitable("indoor", { weather: "unknown", season: "unknown" })).toBeCloseTo(seasonAverage, 10);
+  });
+
+  it("calculates snowy winter suitability with exact conditional probabilities", () => {
+    const result = infer({ weather: "snowy", season: "winter" });
+    expect(result.pComfort).toBeCloseTo(0.08, 10);
+    expect(result.pCrowdHigh).toBeCloseTo(0.3, 10);
+    expect(result.bySetting.outdoor).toBeCloseTo(0.27264, 10);
+    expect(result.bySetting.indoor).toBeCloseTo(0.82864, 10);
+  });
+
   it("computes P(suitable | sunny, summer) for outdoor places by enumeration", () => {
     // 0.9·(0.25·0.92 + 0.75·0.78) + 0.1·(0.25·0.25 + 0.75·0.15) = 0.751
     expect(pSuitable("outdoor", { weather: "sunny", season: "summer" })).toBeCloseTo(0.751, 3);
