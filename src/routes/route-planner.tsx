@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowLeftRight, ChevronLeft, ChevronRight, FastForward, Pause, Play, RotateCcw } from "lucide-react";
+import { ArrowLeftRight, ChevronLeft, ChevronRight, FastForward, Pause, Play, RotateCcw, Map, Waypoints } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MapView } from "@/components/map/MapView";
+import { LandmarkGraph } from "@/components/map/LandmarkGraph";
 import type { MapLine, MapMarker, PinVariant } from "@/components/map/map-types";
 import { Explainer, PageHeader, Panel, Stat } from "@/components/site/kit";
 import { EDGES, aStar, dijkstra, partialPath } from "@/lib/astana/astar";
@@ -39,12 +40,15 @@ function RoutePlannerPage() {
   const [goal, setGoal] = useState("hazrat-sultan");
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [speed, setSpeed] = useState("1");
+  const [view, setView] = useState<"graph" | "map">("graph");
+  const [selection, setSelection] = useState<"start" | "goal">("start");
   const logRef = useRef<HTMLOListElement>(null);
 
   const result = useMemo(() => aStar(start, goal), [start, goal]);
   const reference = useMemo(() => dijkstra(start, goal), [start, goal]);
   const last = result.steps.length - 1;
-  const step = result.steps[Math.min(index, last)]!;
+  const step = result.steps[Math.min(index, last)];
   const finished = index >= last;
 
   useEffect(() => {
@@ -58,9 +62,9 @@ function RoutePlannerPage() {
       setPlaying(false);
       return;
     }
-    const t = setTimeout(() => setIndex((i) => i + 1), 1000);
+    const t = setTimeout(() => setIndex((i) => i + 1), 1000 / Number(speed));
     return () => clearTimeout(t);
-  }, [playing, index, last]);
+  }, [playing, index, last, speed]);
 
   useEffect(() => {
     const el = logRef.current;
@@ -68,14 +72,15 @@ function RoutePlannerPage() {
   }, [index]);
 
   const { markers, lines } = useMemo(() => {
+    if (!step) return { markers: [], lines: [] };
     const closed = new Set(step.closed);
     const open = new Set(step.open.map((o) => o.id));
     const pathNow = finished ? result.path : partialPath(step.cameFrom, step.current.id, start);
     const onPath = new Set(pathNow);
     const markers: MapMarker[] = LANDMARKS.map((l) => {
       let variant: PinVariant = "muted";
-      if (l.id === step.current.id) variant = "current";
-      else if (finished && onPath.has(l.id)) variant = "path";
+      if (finished && onPath.has(l.id)) variant = "path";
+      else if (l.id === step.current.id) variant = "current";
       else if (open.has(l.id)) variant = "open";
       else if (closed.has(l.id)) variant = "closed";
       else if (l.id === goal) variant = "goal";
@@ -106,11 +111,25 @@ function RoutePlannerPage() {
     setGoal(start);
   };
 
+  const selectNode = (id: string) => {
+    if (selection === "start") {
+      if (id === goal) swap();
+      else setStart(id);
+      setSelection("goal");
+    } else {
+      if (id === start) swap();
+      else setGoal(id);
+    }
+    setPlaying(false);
+    setIndex(0);
+  };
+
+  if (!step) return null;
+
   return (
     <>
       <PageHeader code="02" concept="Informed search" title="A* pathfinding across Astana's road graph">
-        Pick two landmarks and step through the search. Gold is the node being expanded, outlined pins are in the
-        open set, pale pins are closed.
+        {getLandmark(start).name} → {getLandmark(goal).name}
       </PageHeader>
 
       <div className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6">
@@ -142,10 +161,16 @@ function RoutePlannerPage() {
             </div>
           </div>
           <div className="mt-5 flex items-center gap-4">
-            <span className="font-mono text-xs text-muted-foreground">
+            <span className="shrink-0 font-mono text-xs text-muted-foreground">
               step {index + 1}/{result.steps.length}
             </span>
             <Slider min={0} max={last} step={1} value={[index]} onValueChange={([v]) => { setPlaying(false); setIndex(v ?? 0); }} aria-label="Search step" />
+            <Select value={speed} onValueChange={setSpeed}>
+              <SelectTrigger className="w-24 shrink-0" aria-label="Playback speed"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {["0.5", "1", "2", "4"].map(value => <SelectItem key={value} value={value}>{value}×</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
         </Panel>
 
@@ -162,12 +187,25 @@ function RoutePlannerPage() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
-          <div className="space-y-3">
-            <MapView className="h-[360px] sm:h-[520px]" markers={markers} lines={lines} fitKey="graph" />
+          <div className="min-w-0 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex gap-1" role="group" aria-label="Graph view">
+                <Button size="sm" variant={view === "graph" ? "default" : "outline"} onClick={() => setView("graph")} aria-pressed={view === "graph"}><Waypoints />Graph</Button>
+                <Button size="sm" variant={view === "map" ? "default" : "outline"} onClick={() => setView("map")} aria-pressed={view === "map"}><Map />Map</Button>
+              </div>
+              <div className="flex gap-1" role="group" aria-label="Node selection">
+                <Button size="sm" variant={selection === "start" ? "default" : "outline"} onClick={() => setSelection("start")} aria-pressed={selection === "start"}>Select start</Button>
+                <Button size="sm" variant={selection === "goal" ? "default" : "outline"} onClick={() => setSelection("goal")} aria-pressed={selection === "goal"}>Select goal</Button>
+              </div>
+            </div>
+            {view === "graph" ? <LandmarkGraph markers={markers} lines={lines} start={start} goal={goal} selection={selection} onSelect={selectNode} /> :
+              <MapView className="h-[360px] sm:h-[520px]" markers={markers} lines={lines} fitKey="graph" onMarkerClick={selectNode} />}
             <Legend />
+            {finished && <div role="status" className="border-l-2 border-primary pl-3 text-sm font-medium text-primary">{result.path.map(id => getLandmark(id).shortName).join(" → ")} · {r2(result.cost)} km</div>}
           </div>
-          <div className="space-y-6">
+          <div className="min-w-0 space-y-6">
             <Panel title="Search log">
+              <p className="mb-3 text-sm" role="status">{step.isGoal ? "Goal reached. Shortest path reconstructed." : `${getLandmark(step.current.id).shortName} has the lowest f: ${r2(step.current.g)} + ${r2(step.current.h)} = ${r2(step.current.f)} km.`}</p>
               <ol ref={logRef} className="max-h-[300px] space-y-2 overflow-y-auto rounded-lg bg-navy p-3 font-mono text-[0.72rem] leading-relaxed">
                 {result.steps.slice(0, index + 1).map((s) => (
                   <li

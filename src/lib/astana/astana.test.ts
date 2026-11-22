@@ -91,6 +91,39 @@ describe("A* route planner", () => {
     expect(r.path[0]).toBe("nur-alem");
     expect(r.path.at(-1)).toBe("hazrat-sultan");
   });
+
+  it("expands the lowest-f queued node on every step", () => {
+    const result = aStar("nur-alem", "hazrat-sultan");
+    expect(result.steps.length).toBeGreaterThan(1);
+    for (let i = 1; i < result.steps.length; i++) {
+      const previous = result.steps[i - 1];
+      const current = result.steps[i];
+      if (!previous || !current) throw new Error("Missing search step");
+      const minimum = Math.min(...previous.open.map(node => node.f));
+      expect(current.current.f).toBeCloseTo(minimum, 8);
+      expect(current.closed).toContain(current.current.id);
+      expect(current.open.map(node => node.id)).not.toContain(current.current.id);
+    }
+  });
+
+  it("records independent trace snapshots and reconstructs the final route", () => {
+    const result = aStar("nur-alem", "hazrat-sultan");
+    const first = result.steps[0];
+    const final = result.steps.at(-1);
+    expect(first?.closed).toEqual(["nur-alem"]);
+    expect(first?.updates.length).toBeGreaterThan(0);
+    expect(final?.isGoal).toBe(true);
+    expect(final?.current.g).toBe(result.cost);
+    expect(first?.cameFrom).not.toBe(final?.cameFrom);
+  });
+
+  it("returns an exhausted search rather than a route for disconnected nodes", () => {
+    const result = aStar("nur-alem", "hazrat-sultan", {});
+    expect(result.found).toBe(false);
+    expect(result.path).toEqual([]);
+    expect(result.steps).toHaveLength(1);
+    expect(result.steps[0]?.open).toEqual([]);
+  });
 });
 
 describe("Bayesian network", () => {

@@ -267,3 +267,28 @@
   box-shadow: none;
 }
 .leaflet-tooltip.map-tooltip::before { border-top-color: var(--navy); }
+
+/* A* schematic: route weights and persistent, keyboard-accessible nodes. */
+.graph-distance {
+  fill: var(--muted-foreground);
+  stroke: var(--card);
+  stroke-width: 5px;
+  paint-order: stroke;
+  font: 500 12px var(--font-mono);
+}
+.graph-node {
+  width: 152px;
+  height: 60px;
+  display: block;
+  padding: 6px 8px;
+  border-width: 2px;
+  font-size: 13px;
+  line-height: 18px;
+}
+.graph-node--muted { background: var(--card); color: var(--muted-foreground); }
+.graph-node--open { background: var(--card); color: var(--primary); border-color: var(--primary); }
+.graph-node--closed { background: var(--accent); color: var(--accent-foreground); border-color: var(--silver); }
+.graph-node--goal { background: var(--card); color: var(--success); border-color: var(--success); }
+.graph-node--path { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
+.graph-node--current { background: var(--highlight); color: var(--highlight-foreground); border-color: var(--highlight); }
+.graph-node:hover { outline: 2px solid var(--ring); outline-offset: -2px; }

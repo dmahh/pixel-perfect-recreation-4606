@@ -14,7 +14,7 @@ export default function AstanaMap({ markers, lines = [], fitKey, onMarkerClick }
 
   useEffect(() => {
     if (!containerRef.current) return;
-    const map = L.map(containerRef.current, { scrollWheelZoom: false, zoomSnap: 0.25 }).setView(
+    const map = L.map(containerRef.current, { scrollWheelZoom: false, zoomSnap: 0.25, zoomAnimation: false, fadeAnimation: false }).setView(
       ASTANA_CENTER,
       13,
     );
@@ -28,6 +28,7 @@ export default function AstanaMap({ markers, lines = [], fitKey, onMarkerClick }
     ro.observe(containerRef.current);
     return () => {
       ro.disconnect();
+      map.stop();
       map.remove();
       mapRef.current = null;
       layerRef.current = null;

@@ -87,7 +87,8 @@ export function aStar(start: string, goal: string, graph: Graph = ROAD_GRAPH): A
   const steps: AStarStep[] = [];
 
   while (open.size > 0) {
-    const current = [...open.values()].sort((a, b) => a.f - b.f || a.h - b.h)[0]!;
+    const current = [...open.values()].sort((a, b) => a.f - b.f || a.h - b.h)[0];
+    if (!current) break;
     open.delete(current.id);
     closed.add(current.id);
     const name = getLandmark(current.id).shortName;
@@ -124,7 +125,7 @@ export function aStar(start: string, goal: string, graph: Graph = ROAD_GRAPH): A
     }
 
     const summary = updates
-      .map((u) => `${getLandmark(u.id).shortName} ${u.status === "skipped" ? "kept (no better g)" : `${u.status} f=${r2(u.f)}`}`)
+      .map((u) => `${getLandmark(u.id).shortName}: ${u.status === "skipped" ? "keep existing route (no lower g)" : `${u.status === "new" ? "add to open set" : "improve route"}, g=${r2(u.g)}, h=${r2(u.h)}, f=${r2(u.f)}`}`)
       .join("; ");
     steps.push({
       iteration: steps.length + 1,
