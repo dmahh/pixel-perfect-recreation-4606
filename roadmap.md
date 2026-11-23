@@ -9,6 +9,6 @@
 - [x] Test search traces and verify playback on desktop and mobile.
 
 # Bayesian calculator
-- [ ] Improve weather/season inputs and precise attraction scores.
-- [ ] Add a setting comparison chart and clear model assumptions.
-- [ ] Verify probability calculations and desktop/mobile interactions.
+- [x] Improve weather/season inputs and precise attraction scores.
+- [x] Add a setting comparison chart and clear model assumptions.
+- [x] Verify probability calculations and desktop/mobile interactions.
