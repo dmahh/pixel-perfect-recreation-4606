@@ -1,0 +1,100 @@
+export type Language = "en" | "kk";
+export const LANGUAGE_STORAGE_KEY = "smart-astana-language";
+export function parseLanguage(value: string | null): Language { return value === "kk" ? "kk" : "en"; }
+
+const KAZAKH: Record<string, string> = {
+  "AI tourist guide": "ЖИ туристік гиді",
+  "Itinerary agent": "Саяхат агенті", "A* route planner": "A* бағыт жоспарлағышы", "Bayesian network": "Байес желісі",
+  "Intelligent agent": "Зияткерлік агент", "Informed search": "Эвристикалық іздеу", "Probabilistic reasoning": "Ықтималдық пайымдау",
+  "Your Astana day, planned by a rational agent": "Астанадағы күніңізді зияткерлік агент жоспарлайды",
+  "A* pathfinding across Astana's road graph": "Астана жолдары бойынша A* іздеуі",
+  "Astana attraction suitability": "Астана көрікті жерлерінің қолайлылығы",
+  "Your preferences": "Сіздің қалауыңыз", "Budget": "Бюджет", "Available time": "Бос уақыт", "Interests": "Қызығушылықтар",
+  "Starting point": "Бастапқы нүкте", "Generate itinerary": "Саяхат жоспарын құру", "Student": "Студенттік", "Standard": "Стандартты", "Comfort": "Жайлылық",
+  "None selected = the agent considers everything.": "Ештеңе таңдалмаса, агент барлық нұсқаны қарайды.",
+  "Set your constraints. The agent scores every landmark, rejects what doesn't fit, and picks the best next stop until your time or budget runs out.": "Бюджет пен уақытты белгілеңіз. Агент көрікті жерлерді бағалап, шектеулерге сай келетін келесі аялдаманы таңдайды.",
+  "Left bank hotel (near Bayterek)": "Сол жағалаудағы қонақүй (Бәйтерек маңы)", "EXPO district": "ЭКСПО ауданы", "Right bank / old town": "Оң жағалау / ескі қала",
+  "Saving your preferences…": "Қалауыңыз сақталуда…", "Couldn't save preferences — try again.": "Қалауыңыз сақталмады — қайта көріңіз.",
+  "Preferences saved on this browser": "Қалауыңыз осы браузерде сақталды", "Restored your last saved preferences": "Соңғы сақталған қалауыңыз қалпына келтірілді",
+  "Your preferences are saved when you generate.": "Жоспар құрылғанда қалауыңыз сақталады.",
+  "Stops": "Аялдамалар", "Estimated cost": "Болжамды шығын", "Estimated time": "Болжамды уақыт", "Avg utility": "Орташа пайдалылық",
+  "Generated itinerary": "Саяхат жоспары", "Agent reasoning log": "Агенттің пайымдау журналы",
+  "Nothing fits yet — try a bigger budget, more time or broader interests.": "Сәйкес нұсқа жоқ — бюджетті, уақытты немесе қызығушылықтар аясын кеңейтіңіз.",
+  "Popularity": "Танымалдық", "Start": "Бастау", "Goal": "Мақсат", "Play": "Ойнату", "Pause": "Кідірту", "Replay": "Қайта ойнату",
+  "Reset": "Қалпына келтіру", "Previous step": "Алдыңғы қадам", "Next step": "Келесі қадам", "Jump to result": "Нәтижеге өту", "Swap start and goal": "Бастау мен мақсатты ауыстыру",
+  "Search step": "Іздеу қадамы", "Playback speed": "Ойнату жылдамдығы", "Expanding": "Қаралып жатыр", "Open set": "Ашық жиын", "Closed set": "Жабық жиын",
+  "Route length": "Бағыт ұзындығы", "Expansions": "Қаралған түйіндер", "Graph": "Граф", "Map": "Карта", "Select start": "Бастауды таңдау", "Select goal": "Мақсатты таңдау",
+  "Search log": "Іздеу журналы", "Open set (priority queue by f)": "Ашық жиын (f бойынша кезек)", "Node": "Түйін", "Empty.": "Бос.", "Path:": "Бағыт:",
+  "Goal reached. Shortest path reconstructed.": "Мақсатқа жетті. Ең қысқа бағыт қалпына келтірілді.", "Final path": "Соңғы бағыт", "Unvisited": "Қаралмаған",
+  "Weather": "Ауа райы", "Season": "Жыл мезгілі", "Sunny": "Ашық", "Cloudy": "Бұлтты", "Rainy": "Жаңбырлы", "Snowy": "Қарлы", "Unknown": "Белгісіз",
+  "Spring": "Көктем", "Summer": "Жаз", "Autumn": "Күз", "Winter": "Қыс", "Unknown weather": "Ауа райы белгісіз", "Unknown season": "Мезгіл белгісіз",
+  "Evidence": "Бастапқы деректер", "Network": "Желі", "Indoor vs. outdoor suitability": "Жабық және ашық орындардың қолайлылығы", "Average suitability": "Орташа қолайлылық",
+  "Suitability by attraction": "Көрікті жерлердің қолайлылығы", "Indoor": "Жабық орын", "Outdoor": "Ашық орын", "Indoor + outdoor": "Жабық + ашық",
+  "Museum": "Мұражай", "Park": "Саябақ", "Monument": "Ескерткіш", "Museums": "Мұражайлар", "Parks": "Саябақтар", "Monuments": "Ескерткіштер",
+  "High ≥ 70%": "Жоғары ≥ 70%", "Moderate 50–69.9%": "Орташа 50–69,9%", "Low < 50%": "Төмен < 50%",
+  "Conditional probability tables": "Шартты ықтималдық кестелері", "Crowd high": "Адам көп", "Suitable": "Қолайлы", "prior": "Априорлық",
+  "Illustrative model estimates, not live weather forecasts or visitor survey results. Attractions with the same indoor/outdoor setting share a probability.": "Бұл — үлгілік бағалар, нақты ауа райы болжамы немесе сауалнама нәтижесі емес. Бірдей ортадағы орындардың ықтималдығы бірдей.",
+  "P(Comfort = yes | Weather, Season)": "P(Жайлылық = иә | Ауа райы, Мезгіл)", "P(Suitable | Comfort, Crowd, Setting)": "P(Қолайлылық | Жайлылық, Адам саны, Орта)",
+  "P(Crowd=high | Season):": "P(Адам көп | Мезгіл):", "C, low": "C, аз", "C, high": "C, көп", "¬C, low": "¬C, аз", "¬C, high": "¬C, көп",
+  "History": "Тарих", "Architecture": "Сәулет", "Nature": "Табиғат", "Culture": "Мәдениет", "Science": "Ғылым", "Shopping": "Сауда", "Photography": "Фотография", "Spirituality": "Руханият",
+  "history": "тарих", "architecture": "сәулет", "nature": "табиғат", "culture": "мәдениет", "science": "ғылым", "shopping": "сауда", "photography": "фотография", "spirituality": "руханият",
+  "Bayterek Tower": "Бәйтерек монументі", "Bayterek": "Бәйтерек", "Khan Shatyr Entertainment Center": "Хан Шатыр ойын-сауық орталығы", "Khan Shatyr": "Хан Шатыр",
+  "Palace of Peace and Reconciliation": "Бейбітшілік және келісім сарайы", "Pyramid": "Пирамида", "Hazrat Sultan Mosque": "Әзірет Сұлтан мешіті", "Hazrat Sultan": "Әзірет Сұлтан",
+  "National Museum of Kazakhstan": "Қазақстанның Ұлттық мұражайы", "National Museum": "Ұлттық мұражай", "Nur Alem — Museum of Future Energy": "Нұр Әлем — болашақ энергия мұражайы", "Nur Alem": "Нұр Әлем",
+  "Atameken Ethno-Memorial Complex": "Атамекен этно-мемориалдық кешені", "Atameken": "Атамекен", "Astana Central Park": "Астана орталық саябағы", "Central Park": "Орталық саябақ",
+  "Presidential Park": "Президенттік саябақ", "Astana Botanical Garden": "Астана ботаникалық бағы", "Botanical Garden": "Ботаникалық бақ",
+  "A 97-metre 'tree of life' holding a golden egg. The observation deck height marks 1997, the year Astana became the capital.": "Алтын шарды ұстап тұрған 97 метрлік «өмір ағашы». Биіктігі Астананың елорда атанған 1997 жылын білдіреді.",
+  "Norman Foster's 150-metre transparent tent, home to shops, an indoor park and a rooftop beach resort.": "Норман Фостер жобалаған 150 метрлік мөлдір шатыр: дүкендер, жабық саябақ және жағажай кешені.",
+  "A 62-metre glass pyramid built to host the Congress of Leaders of World and Traditional Religions.": "Әлемдік және дәстүрлі діндер көшбасшыларының съезіне арналған 62 метрлік шыны пирамида.",
+  "One of the largest mosques in Central Asia, built in classical Islamic style with traditional Kazakh ornament.": "Дәстүрлі қазақ оюларымен классикалық ислам стилінде салынған Орталық Азиядағы ең ірі мешіттердің бірі.",
+  "The largest museum in Central Asia: the Golden Man hall, ethnography and the story of independent Kazakhstan.": "Орталық Азиядағы ең үлкен мұражай: Алтын адам залы, этнография және тәуелсіз Қазақстан тарихы.",
+  "The 100-metre glass sphere built for EXPO-2017, with eight floors on renewable and future energy.": "ЭКСПО-2017 үшін салынған 100 метрлік шыны шар. Сегіз қабаты жаңартылатын және болашақ энергияға арналған.",
+  "An open-air map of Kazakhstan in miniature, with models of landmarks from every region of the country.": "Қазақстанның ашық аспан астындағы шағын картасы: елдің барлық өңірлеріндегі көрікті жерлердің макеттері.",
+  "A riverside park on the right bank of the Esil with a long promenade, lawns and a family amusement area.": "Есілдің оң жағалауындағы серуен жолы, көгалдары және отбасылық ойын-сауық аймағы бар саябақ.",
+  "Wide landscaped park on the left bank with lakes, walking loops and views of Ak Orda and the Pyramid.": "Сол жағалаудағы көлдері мен серуен жолдары бар кең саябақ. Ақорда мен Пирамида көрінеді.",
+  "Gardens with more than a thousand plant species and a tropical greenhouse, a short walk from Khan Shatyr.": "Хан Шатырға жақын, мыңнан астам өсімдік түрі және тропикалық жылыжайы бар бақ.",
+  "AI fundamentals · Astana, Kazakhstan": "ЖИ негіздері · Астана, Қазақстан", "Plan my day": "Күнімді жоспарлау", "See A* in action": "A* іздеуін көру",
+  "An interactive guide to ten Astana landmarks, built to show how agents, search and probability turn a city into a solvable problem.": "Астананың он көрікті жеріне арналған гид: зияткерлік агенттер, іздеу және ықтималдық арқылы саяхат жоспарлау.",
+  "Three modules": "Үш модуль", "One city, three ways an AI can think about it.": "Бір қала — жасанды интеллекттің үш тәсілі.",
+  "A utility-based agent perceives your budget, time and interests, then acts by choosing the best next landmark until no feasible move remains.": "Агент бюджетіңізді, уақытыңызды және қызығушылықтарыңызды ескеріп, келесі қолайлы көрікті жерді таңдайды.",
+  "Informed search over the city road graph, using f(n) = g(n) + h(n) with a straight-line heuristic. Watch every expansion step by step.": "Қала жолдарының графында f(n) = g(n) + h(n) формуласымен іздеу. Әр қадамды бақылаңыз.",
+  "Weather and season propagate through comfort and crowd nodes to give each attraction a probability of being a good visit today.": "Ауа райы мен мезгіл жайлылық пен адам саны арқылы әр орынның қолайлылық ықтималдығын анықтайды.",
+  "A* route planning": "A* бағыт жоспарлау", "Build an itinerary": "Саяхат жоспарын құру", "Plan a route": "Бағыт жоспарлау", "Score attractions": "Орындарды бағалау",
+  "How it works": "Қалай жұмыс істейді", "From preferences to a plan.": "Қалауыңыздан саяхат жоспарына.",
+  "Tell the agent your budget, time and interests": "Бюджет, уақыт және қызығушылықтарыңызды таңдаңыз", "Get a custom itinerary on the map": "Картадан жеке саяхат жоспарын алыңыз",
+  "Trace the A* path between any two landmarks": "Екі көрікті жер арасындағы A* бағытын бақылаңыз", "Check which attractions suit today's weather": "Ауа райына қолайлы орындарды тексеріңіз",
+  "Smart Astana — an academic demo of intelligent agents, A* search and Bayesian networks.": "Smart Astana — зияткерлік агенттер, A* іздеуі және Байес желілерінің оқу үлгісі.",
+  "Prices and visit times are sample data. Map data © OpenStreetMap contributors.": "Бағалар мен келу уақыты — үлгілік деректер. Карта © OpenStreetMap қатысушылары.",
+  "Academic explanation": "Академиялық түсіндірме", "Concept": "Ұғым", "In this app": "Қолданбада", "Limitations": "Шектеулер",
+  "Free": "Тегін", "Budget in tenge": "Теңгемен бюджет", "Available hours": "Бос сағаттар",
+  "Interactive landmark graph": "Көрікті жерлердің интерактивті графы", "Astana landmark route graph": "Астана бағыттарының графы", "Bayesian network diagram": "Байес желісінің сызбасы",
+  "Suitability comparison by attraction setting": "Орын ортасы бойынша қолайлылықты салыстыру", "Weather conditions": "Ауа райы жағдайлары", "Graph view": "Граф көрінісі", "Node selection": "Түйінді таңдау",
+  "Loading map of Astana…": "Астана картасы жүктелуде…",
+};
+
+const PHRASES: [string, string][] = [
+  ["Goal reached — reconstruct path through cameFrom.", "Мақсатқа жетті — cameFrom арқылы бағытты қалпына келтіру."],
+  ["No unexplored neighbours.", "Қаралмаған көрші түйін жоқ."], ["keep existing route (no lower g)", "бұрынғы бағытты сақтау (g азаймады)"],
+  ["add to open set", "ашық жиынға қосу"], ["improve route", "бағытты жақсарту"], ["has the lowest f:", "ең кіші f мәніне ие:"],
+  ["No landmark fits these constraints. Try a larger budget, more time or other interests.", "Шектеулерге сай орын жоқ. Бюджетті, уақытты немесе қызығушылықтарды өзгертіңіз."],
+  ["Filtered knowledge base:", "Сүзілген білім қоры:"], ["landmarks match the interests", "орын қызығушылықтарға сай"], ["ignored", "ескерілмеді"],
+  ["Percept: budget", "Қабылдау: бюджет"], ["h available, interests", "сағ бос уақыт, қызығушылықтар"], ["start at", "бастау нүктесі"],
+  ["Act: go to", "Әрекет: бару"], ["Goal reached:", "Мақсатқа жетті:"], ["h used.", "сағ пайдаланылды."], ["Reject", "Қабылдамау"],
+  ["costs", "құны"], ["needs", "қажет"], ["only", "тек"], ["left.", "қалды."], ["Pop", "Таңдау"],
+  ["visits only", "тек бару шығыны"], ["includes travel", "жол уақытымен"], ["road segments", "жол бөлігі"], ["searching", "іздеу жүріп жатыр"],
+  ["Knowledge base", "Білім қоры"], ["landmarks", "көрікті жер"], ["attractions", "орын"], ["popularity", "танымалдық"],
+  ["utility", "пайдалылық"], ["travel", "жол"], ["visit", "бару"], ["score", "баға"], ["matches", "сәйкестік"], ["stops", "аялдама"],
+  ["percept", "қабылдау"], ["evaluate", "бағалау"], ["select", "таңдау"], ["reject", "қабылдамау"], ["done", "аяқталды"],
+  ["current", "қаралуда"], ["muted", "қаралмаған"], ["closed", "жабық"], ["open", "ашық"], ["path", "бағыт"], ["goal", "мақсат"],
+  ["step", "қадам"], ["any", "кез келген"], ["min", "мин"], ["km", "км"], ["h", "сағ"], ["of", "/"], ["vs", "/"], ["in", "іште"], ["out", "сыртта"],
+];
+const replacements = [...Object.entries(KAZAKH), ...PHRASES].sort((a, b) => b[0].length - a[0].length);
+const escape = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const replacementMap = new Map(replacements);
+const pattern = new RegExp(`(?<![\\p{L}])(?:${replacements.map(([en]) => escape(en)).join("|")})(?![\\p{L}])`, "gu");
+
+/** Presentation-only translation: IDs, values and algorithm inputs stay unchanged. */
+export function translate(language: Language, text: string): string {
+  if (language === "en") return text;
+  return KAZAKH[text] ?? text.replace(pattern, match => replacementMap.get(match) ?? match);
+}

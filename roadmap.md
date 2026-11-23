@@ -12,3 +12,9 @@
 - [x] Improve weather/season inputs and precise attraction scores.
 - [x] Add a setting comparison chart and clear model assumptions.
 - [x] Verify probability calculations and desktop/mobile interactions.
+
+# Bilingual UI refinement
+- [ ] Refine Astana blue/silver typography and responsive navigation.
+- [ ] Add English–Kazakh switching across pages, controls and academic content.
+- [ ] Add concise academic explanation tabs to all three modules.
+- [ ] Verify language persistence, module interactions and mobile layouts.
